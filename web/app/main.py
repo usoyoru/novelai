@@ -129,6 +129,12 @@ async def vote_page(
 ):
     """Vote page"""
     try:
+        # Get novel
+        novel = db.query(Novel).filter(Novel.id == novel_id).first()
+        if not novel:
+            raise HTTPException(status_code=404, detail="Novel not found")
+            
+        # Get plot option
         plot_option = db.query(PlotOption).filter(
             PlotOption.novel_id == novel_id,
             PlotOption.chapter_number == chapter_number,
@@ -138,11 +144,20 @@ async def vote_page(
         if not plot_option:
             raise HTTPException(status_code=404, detail="Voting option not found")
             
+        # Get all plot options for this chapter
+        plot_options = db.query(PlotOption).filter(
+            PlotOption.novel_id == novel_id,
+            PlotOption.chapter_number == chapter_number
+        ).all()
+            
         return templates.TemplateResponse(
             "vote.html",
             {
                 "request": request,
-                "plot_option": plot_option
+                "novel": novel,
+                "chapter_number": chapter_number,
+                "plot_options": plot_options,
+                "selected_option": plot_option
             }
         )
     except Exception as e:

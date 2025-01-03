@@ -10,3 +10,5 @@ tweepy==4.14.0
 solana>=0.30.2
 PyNaCl>=1.5.0
 python-multipart
+solders
+base58

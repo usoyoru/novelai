@@ -94,6 +94,126 @@
         </div>
     </footer>
 
+    <style>
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-content h3 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: var(--highlight-color);
+        }
+
+        .wallet-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .wallet-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: none;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .wallet-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .wallet-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        /* 提示框样式 */
+        .alert-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            text-align: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .alert-modal h3 {
+            color: var(--highlight-color);
+            margin-bottom: 1rem;
+        }
+
+        .alert-modal p {
+            color: var(--text-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .alert-modal button {
+            background: var(--highlight-color);
+            color: var(--text-color);
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .alert-modal button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+    </style>
+
+    <!-- 提示框 -->
+    <div id="alertModal" class="alert-modal">
+        <h3>投票提示</h3>
+        <p id="alertMessage"></p>
+        <button onclick="closeAlert()">确定</button>
+    </div>
+
     <script>
         let wallet = null;
         let publicKey = null;
@@ -209,14 +329,14 @@
             event.preventDefault();
             
             if (!publicKey) {
-                alert('请先连接钱包');
+                showAlert('请先连接钱包');
                 return false;
             }
 
             // 再次检查代币余额
             const hasToken = await checkTokenBalance(publicKey);
             if (!hasToken) {
-                alert('您的钱包中没有所需的代币，无法进行投票');
+                showAlert('您的钱包中没有所需的代币，无法进行投票');
                 return false;
             }
 
@@ -231,18 +351,47 @@
                     .map(b => b.toString(16).padStart(2, '0'))
                     .join('');
 
-                // 将签名添加到表单
-                const signatureInput = form.querySelector('.signature-input');
-                signatureInput.value = signature;
+                // 准备表单数据
+                const formData = new FormData();
+                formData.append('wallet_address', publicKey);
+                formData.append('signature', signature);
 
-                // 提交表单
-                form.submit();
-                return true;
+                // 发送AJAX请求
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('投票成功！');
+                    // 更新投票计数
+                    const voteCount = form.closest('.vote-option').querySelector('.vote-count');
+                    const currentCount = parseInt(voteCount.textContent);
+                    voteCount.textContent = `${currentCount + 1} votes`;
+                    // 禁用所有投票按钮
+                    document.querySelectorAll('.vote-button').forEach(button => {
+                        button.disabled = true;
+                        button.textContent = '已投票';
+                    });
+                } else {
+                    showAlert(result.detail || '投票失败，请稍后重试');
+                }
             } catch (error) {
                 console.error('投票失败:', error);
-                alert('投票失败: ' + error.message);
-                return false;
+                showAlert('投票失败: ' + error.message);
             }
+        }
+
+        function showAlert(message) {
+            const alertModal = document.getElementById('alertModal');
+            document.getElementById('alertMessage').textContent = message;
+            alertModal.style.display = 'block';
+        }
+
+        function closeAlert() {
+            document.getElementById('alertModal').style.display = 'none';
         }
 
         // 监听钱包账户变化
@@ -269,66 +418,5 @@
             }
         }
     </script>
-
-    <style>
-        /* 弹窗样式 */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background: var(--card-background);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: var(--shadow);
-            max-width: 400px;
-            width: 90%;
-        }
-
-        .modal-content h3 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            color: var(--highlight-color);
-        }
-
-        .wallet-options {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .wallet-option {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            background: none;
-            color: var(--text-color);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .wallet-option:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .wallet-icon {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
-    </style>
 </body>
 </html> 

@@ -1,6 +1,6 @@
 from bot.app.database import migrate_votes_to_wallet
 
 if __name__ == "__main__":
-    print("Starting database migration...")
+    print("开始数据库迁移...")
     migrate_votes_to_wallet()
-    print("Database migration completed") 
+    print("数据库迁移完成") 

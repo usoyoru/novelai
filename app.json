@@ -1,57 +1,31 @@
 {
-  "name": "AI Interactive Novel",
-  "description": "An AI-powered interactive novel platform where readers can vote to determine the story's direction",
-  "keywords": [
-    "python",
-    "fastapi",
-    "ai",
-    "novel",
-    "interactive"
-  ],
-  "website": "https://github.com/xbym/xiaoshuo",
-  "repository": "https://github.com/xbym/xiaoshuo",
-  "success_url": "/",
-  "scripts": {
-    "postdeploy": "python manage.py init"
-  },
+  "name": "Twitter Novel Bot",
+  "description": "一个自动生成小说并在Twitter上发布的机器人",
+  "repository": "https://github.com/yourusername/twitter-novel-bot",
+  "keywords": ["python", "twitter", "bot", "novel", "ai"],
   "env": {
     "OPENAI_API_KEY": {
-      "description": "Your OpenAI API key",
-      "required": true
-    },
-    "DATABASE_URL": {
-      "description": "Database connection URL",
-      "required": true
+      "description": "OpenAI API密钥"
     },
     "TWITTER_API_KEY": {
-      "description": "Twitter API key",
-      "required": false
+      "description": "Twitter API密钥"
     },
     "TWITTER_API_SECRET": {
-      "description": "Twitter API secret",
-      "required": false
+      "description": "Twitter API密钥密文"
     },
     "TWITTER_ACCESS_TOKEN": {
-      "description": "Twitter access token",
-      "required": false
+      "description": "Twitter访问令牌"
     },
     "TWITTER_ACCESS_TOKEN_SECRET": {
-      "description": "Twitter access token secret",
-      "required": false
-    }
-  },
-  "formation": {
-    "web": {
-      "quantity": 1,
-      "size": "basic"
+      "description": "Twitter访问令牌密文"
     },
-    "worker": {
-      "quantity": 1,
-      "size": "basic"
+    "DATABASE_URL": {
+      "description": "PostgreSQL数据库URL",
+      "value": "postgresql://localhost/twitter_novel_bot"
     }
   },
   "addons": [
-    "heroku-postgresql:mini"
+    "heroku-postgresql"
   ],
   "buildpacks": [
     {

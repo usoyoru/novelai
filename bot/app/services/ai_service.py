@@ -5,7 +5,7 @@ import json
 from openai import OpenAI
 from pydantic import BaseModel
 
-# Configure logging
+# 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -20,16 +20,13 @@ class NovelPrompt(BaseModel):
 
 class AIService:
     def __init__(self):
-        """Initialize AI service"""
+        """初始化AI服务"""
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("OPENAI_API_KEY environment variable not set")
+            raise ValueError("未设置 OPENAI_API_KEY 环境变量")
         
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url="https://api.proxyapi.us/v1"  # 使用代理 API 端点
-        )
-        logger.info("AI service initialization completed")
+        self.client = OpenAI(api_key=api_key)
+        logger.info("AI服务初始化完成")
 
     async def generate_outline(self, title: str, genre: str) -> str:
         try:
@@ -212,32 +209,32 @@ class AIService:
             )
             
             content = response.choices[0].message.content
-            logger.info(f"Generated content: {content[:200]}...")  # Log first 200 characters of generated content
+            logger.info(f"Generated content: {content[:200]}...")  # 记录生成的内容的前200个字符
             
             try:
-                # Try to clean and format content
+                # 尝试清理和格式化内容
                 content = content.strip()
                 if not content.startswith('['):
-                    # Try to find the start of JSON array
+                    # 尝试找到JSON数组的开始位置
                     start = content.find('[')
                     if start != -1:
                         content = content[start:]
                 if not content.endswith(']'):
-                    # Try to find the end of JSON array
+                    # 尝试找到JSON数组的结束位置
                     end = content.rfind(']')
                     if end != -1:
                         content = content[:end+1]
                 
-                # Parse JSON
+                # 解析JSON
                 options = json.loads(content)
                 
-                # Validate options format
+                # 验证选项格式
                 if not isinstance(options, list):
-                    raise ValueError("Options must be an array")
+                    raise ValueError("选项必须是一个数组")
                 
                 for option in options:
                     if not all(key in option for key in ['option_id', 'title', 'description', 'impact']):
-                        raise ValueError("Invalid option format")
+                        raise ValueError("选项格式不正确")
                 
                 logger.info("Successfully generated plot options")
                 return options
@@ -245,31 +242,31 @@ class AIService:
             except json.JSONDecodeError as e:
                 logger.error(f"JSON parsing error: {str(e)}")
                 logger.error(f"Content causing error: {content}")
-                # Return default options
+                # 返回默认选项
                 return [
                     {
                         "option_id": "A",
-                        "title": "Continue Exploration",
-                        "description": "Explore unknown areas and search for more clues.",
-                        "impact": "May discover important information but could face dangers."
+                        "title": "继续探索",
+                        "description": "深入探索未知区域，寻找更多线索。",
+                        "impact": "可能发现重要信息，但也可能遭遇危险。"
                     },
                     {
                         "option_id": "B",
-                        "title": "Return to Base",
-                        "description": "Return to base to resupply and report findings.",
-                        "impact": "Ensures safety but might miss important opportunities."
+                        "title": "返回基地",
+                        "description": "先返回基地补给和汇报情况。",
+                        "impact": "确保安全，但可能错过重要机会。"
                     },
                     {
                         "option_id": "C",
-                        "title": "Seek Allies",
-                        "description": "Contact nearby allies for assistance.",
-                        "impact": "Increases chances of success but requires waiting time."
+                        "title": "寻求支援",
+                        "description": "联系附近的盟友寻求帮助。",
+                        "impact": "增加成功的机会，但需要等待时间。"
                     },
                     {
                         "option_id": "D",
-                        "title": "Change Plans",
-                        "description": "Try a new solution.",
-                        "impact": "Could lead to unexpected breakthroughs."
+                        "title": "改变计划",
+                        "description": "尝试一个新的解决方案。",
+                        "impact": "可能带来意想不到的转机。"
                     }
                 ]
             
@@ -278,39 +275,39 @@ class AIService:
             raise
 
     async def generate_next_chapter(self, title: str, genre: str, outline: str, previous_chapter: str, chosen_option: dict, chapter_number: int) -> str:
-        """Generate next chapter based on chosen option"""
+        """根据选定的选项生成下一章节"""
         try:
             logger.info(f"Generating chapter {chapter_number} based on chosen option")
             
-            prompt = f"""Please write chapter {chapter_number} for the novel "{title}" ({genre}).
+            prompt = f"""请为小说《{title}》({genre})创作第{chapter_number}章。
 
-            Previous Chapter Summary:
+            前情提要：
             {previous_chapter[:500]}...
 
-            Reader's Chosen Plot Development:
-            Title: {chosen_option['title']}
-            Description: {chosen_option['description']}
-            Impact: {chosen_option['impact']}
-            Votes: {chosen_option['votes']} votes
+            读者投票选择的剧情发展：
+            标题：{chosen_option['title']}
+            描述：{chosen_option['description']}
+            影响：{chosen_option['impact']}
+            得票：{chosen_option['votes']}票
 
-            Overall Outline:
+            整体大纲：
             {outline}
 
-            Requirements:
-            1. Word count: around 2000 words
-            2. Naturally continue from previous chapter
-            3. Reflect readers' chosen plot development
-            4. Leave cliffhanger for next chapter
-            5. Maintain character consistency
-            6. Control story pacing
-            7. Detailed scene and psychological descriptions
-            8. Add appropriate dialogue and interactions
+            要求：
+            1. 字数在2000字左右
+            2. 要自然地承接上一章节
+            3. 要体现读者选择的剧情发展
+            4. 要为下一章留下悬念
+            5. 保持人物性格的连贯性
+            6. 注意故事节奏的把控
+            7. 细致描写场景和人物心理
+            8. 增加适当的对话和互动
             """
 
             response = self.client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are a professional novelist specializing in creating engaging stories based on reader choices."},
+                    {"role": "system", "content": "你是一个专业的小说家，擅长根据读者选择创作引人入胜的故事。"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,

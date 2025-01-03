@@ -7,7 +7,7 @@ import sys
 import os
 from datetime import datetime, timedelta, timezone
 import base58
-from solana.publickey import PublicKey
+from solders.pubkey import Pubkey
 import nacl.signing
 import nacl.encoding
 import logging
@@ -57,29 +57,20 @@ async def home(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/novel/{novel_id}")
 async def novel_detail(request: Request, novel_id: int, db: Session = Depends(get_db)):
-    """Novel detail page, displays all chapters"""
+    """Novel detail page"""
     try:
         novel = db.query(Novel).filter(Novel.id == novel_id).first()
         if not novel:
             raise HTTPException(status_code=404, detail="Novel not found")
             
-        chapters = db.query(Chapter).filter(
-            Chapter.novel_id == novel_id
-        ).order_by(Chapter.chapter_number).all()
-        
-        # Get voting options for the latest chapter
-        latest_options = db.query(PlotOption).filter(
-            PlotOption.novel_id == novel_id,
-            PlotOption.chapter_number == novel.current_chapter
-        ).all()
+        chapters = db.query(Chapter).filter(Chapter.novel_id == novel_id).order_by(Chapter.chapter_number).all()
         
         return templates.TemplateResponse(
             "novel.html",
             {
                 "request": request,
                 "novel": novel,
-                "chapters": chapters,
-                "latest_options": latest_options
+                "chapters": chapters
             }
         )
     except Exception as e:
@@ -103,29 +94,15 @@ async def chapter_detail(
         if not chapter:
             raise HTTPException(status_code=404, detail="Chapter not found")
             
-        novel = db.query(Novel).filter(Novel.id == novel_id).first()
-        if not novel:
-            raise HTTPException(status_code=404, detail="Novel not found")
-        
-        # Get voting options for this chapter
         plot_options = db.query(PlotOption).filter(
             PlotOption.novel_id == novel_id,
             PlotOption.chapter_number == chapter_number
-        ).order_by(PlotOption.created_at.desc()).limit(4).all()  # Only get latest 4 options
-        
-        # If there are options, ensure they are from the same batch (same creation time)
-        if plot_options:
-            latest_created_at = plot_options[0].created_at
-            plot_options = [opt for opt in plot_options if opt.created_at == latest_created_at]
-        
-        if not plot_options:
-            raise HTTPException(status_code=404, detail="Voting options not found")
+        ).all()
         
         return templates.TemplateResponse(
             "chapter.html",
             {
                 "request": request,
-                "novel": novel,
                 "chapter": chapter,
                 "plot_options": plot_options
             }
@@ -134,46 +111,41 @@ async def chapter_detail(
         logger.error(f"Error in chapter_detail route: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/vote/{novel_id}/{chapter_number}")
+@app.get("/vote/{novel_id}/{chapter_number}/{option_id}")
 async def vote_page(
     request: Request,
     novel_id: int,
     chapter_number: int,
+    option_id: str,
     db: Session = Depends(get_db)
 ):
     """Vote page"""
     try:
-        novel = db.query(Novel).filter(Novel.id == novel_id).first()
-        if not novel:
-            raise HTTPException(status_code=404, detail="Novel not found")
-            
-        plot_options = db.query(PlotOption).filter(
+        plot_option = db.query(PlotOption).filter(
             PlotOption.novel_id == novel_id,
-            PlotOption.chapter_number == chapter_number
-        ).all()
+            PlotOption.chapter_number == chapter_number,
+            PlotOption.option_id == option_id
+        ).first()
         
-        if not plot_options:
-            raise HTTPException(status_code=404, detail="Voting options not found")
+        if not plot_option:
+            raise HTTPException(status_code=404, detail="Voting option not found")
             
         return templates.TemplateResponse(
             "vote.html",
             {
                 "request": request,
-                "novel": novel,
-                "chapter_number": chapter_number,
-                "plot_options": plot_options
+                "plot_option": plot_option
             }
         )
     except Exception as e:
         logger.error(f"Error in vote_page route: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/vote/{novel_id}/{chapter_number}/{option_id}")
+@app.post("/submit_vote/{novel_id}/{chapter_number}/{option_id}")
 async def submit_vote(
-    request: Request,
     novel_id: int,
     chapter_number: int,
-    option_id: int,
+    option_id: str,
     wallet_address: str = Form(...),
     signature: str = Form(...),
     db: Session = Depends(get_db)
@@ -182,83 +154,82 @@ async def submit_vote(
     try:
         # Validate wallet address format
         try:
-            public_key = PublicKey(wallet_address)
+            public_key = Pubkey(wallet_address)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid wallet address")
             
         # Verify signature
         try:
-            message = f"Vote for chapter {chapter_number}"
-            message_bytes = message.encode('utf-8')
-            signature_bytes = bytes.fromhex(signature)
+            # Check if already voted
+            existing_vote = db.query(Vote).join(PlotOption).filter(
+                PlotOption.novel_id == novel_id,
+                PlotOption.chapter_number == chapter_number,
+                Vote.wallet_address == wallet_address
+            ).first()
             
-            # Verify signature using public key
-            verify_key = nacl.signing.VerifyKey(bytes(public_key))
-            verify_key.verify(message_bytes, signature_bytes)
-        except Exception as e:
-            logger.error(f"Signature verification failed: {str(e)}")
-            raise HTTPException(status_code=400, detail="Signature verification failed")
-        
-        # Check if already voted
-        existing_vote = db.query(Vote).join(PlotOption).filter(
-            PlotOption.novel_id == novel_id,
-            PlotOption.chapter_number == chapter_number,
-            Vote.wallet_address == str(public_key),
-            PlotOption.created_at == db.query(PlotOption.created_at)
-                .filter(PlotOption.novel_id == novel_id)
-                .filter(PlotOption.chapter_number == chapter_number)
-                .order_by(PlotOption.created_at.desc())
-                .limit(1)
-                .scalar_subquery()
-        ).first()
-        
-        if existing_vote:
-            raise HTTPException(status_code=400, detail="You have already voted")
+            if existing_vote:
+                raise HTTPException(status_code=400, detail="You have already voted for this chapter")
             
-        # Get voting option
-        plot_option = db.query(PlotOption).filter(
-            PlotOption.id == option_id,
-            PlotOption.novel_id == novel_id,
-            PlotOption.chapter_number == chapter_number
-        ).first()
-        
-        if not plot_option:
-            raise HTTPException(status_code=404, detail="Voting option not found")
+            # Get plot option
+            plot_option = db.query(PlotOption).filter(
+                PlotOption.novel_id == novel_id,
+                PlotOption.chapter_number == chapter_number,
+                PlotOption.option_id == option_id
+            ).first()
             
-        # Ensure the option is from the latest batch
-        latest_options = db.query(PlotOption).filter(
-            PlotOption.novel_id == novel_id,
-            PlotOption.chapter_number == chapter_number
-        ).order_by(PlotOption.created_at.desc()).limit(4).all()
-        
-        if latest_options:
-            latest_created_at = latest_options[0].created_at
-            if plot_option.created_at != latest_created_at:
-                raise HTTPException(status_code=400, detail="Voting option has expired")
-        
-        try:
+            if not plot_option:
+                raise HTTPException(status_code=404, detail="Voting option not found")
+            
             # Create vote record
             vote = Vote(
                 plot_option_id=plot_option.id,
-                wallet_address=str(public_key)
+                wallet_address=wallet_address
             )
             db.add(vote)
             
             # Update vote count
-            plot_option.votes_count += 1
+            plot_option.votes_count = plot_option.votes_count + 1
             
-            # Commit transaction
             db.commit()
             
-            return {"detail": "Vote successful"}
+            return {"status": "success"}
             
         except Exception as e:
-            db.rollback()
-            logger.error(f"Database error: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to save vote")
+            logger.error(f"Error verifying signature: {str(e)}")
+            raise HTTPException(status_code=400, detail="Invalid signature")
             
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error in submit_vote route: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/check_vote/{novel_id}/{chapter_number}")
+async def check_vote(
+    novel_id: int,
+    chapter_number: int,
+    wallet_address: str,
+    db: Session = Depends(get_db)
+):
+    """Check if wallet has voted"""
+    try:
+        # Validate wallet address format
+        try:
+            public_key = Pubkey(wallet_address)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid wallet address")
+            
+        # Check if voted
+        vote = db.query(Vote).join(PlotOption).filter(
+            PlotOption.novel_id == novel_id,
+            PlotOption.chapter_number == chapter_number,
+            Vote.wallet_address == wallet_address
+        ).first()
+        
+        return {"has_voted": vote is not None}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in check_vote route: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 

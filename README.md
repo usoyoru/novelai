@@ -1,75 +1,75 @@
 # AI Interactive Novel
 
-一个由AI驱动的互动小说平台，读者可以通过投票决定故事的发展方向。
+An AI-powered interactive novel platform where readers can vote to determine the story's direction.
 
-## Heroku部署步骤
+## Heroku Deployment Steps
 
-1. 安装Heroku CLI并登录:
+1. Install Heroku CLI and login:
 ```bash
 heroku login
 ```
 
-2. 创建Heroku应用:
+2. Create Heroku app:
 ```bash
 heroku create your-app-name
 ```
 
-3. 添加PostgreSQL数据库:
+3. Add PostgreSQL database:
 ```bash
 heroku addons:create heroku-postgresql:mini
 ```
 
-4. 设置环境变量:
+4. Set environment variables:
 ```bash
 heroku config:set OPENAI_API_KEY=your_openai_api_key
 ```
 
-5. 部署代码:
+5. Deploy code:
 ```bash
 git push heroku main
 ```
 
-6. 启动worker进程:
+6. Start worker process:
 ```bash
 heroku ps:scale worker=1
 ```
 
-## 远程管理命令
+## Remote Management Commands
 
-1. 清理数据库:
+1. Clean database:
 ```bash
 heroku run python manage.py clean
 ```
 
-2. 启动机器人:
+2. Start bot:
 ```bash
 heroku run python manage.py start
 ```
 
-3. 停止机器人:
+3. Stop bot:
 ```bash
 heroku ps:stop worker.1
 ```
 
-## 本地开发
+## Local Development
 
-1. 安装依赖:
+1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. 设置环境变量:
+2. Set environment variables:
 ```bash
 cp .env.example .env
-# 编辑.env文件，填入必要的配置
+# Edit .env file and fill in required configurations
 ```
 
-3. 运行网站:
+3. Run website:
 ```bash
 cd web && uvicorn app.main:app --reload
 ```
 
-4. 运行机器人:
+4. Run bot:
 ```bash
 python manage.py start
 ``` 

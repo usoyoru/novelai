@@ -1,49 +1,62 @@
 import os
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.models.novel import Novel, Chapter, PlotOption, Vote
-
-# 创建数据库引擎
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./novel_bot.db")
-engine = create_engine(DATABASE_URL)
-
-# 创建会话
-Session = sessionmaker(bind=engine)
-session = Session()
+import sqlite3
+from datetime import datetime, timedelta
 
 def clean_database():
-    """清理数据库中的所有数据"""
+    """Clean up old records from the database"""
     try:
-        # 获取所有小说
-        novels = session.query(Novel).all()
+        # Get database path
+        db_path = os.path.join(os.path.dirname(__file__), 'novel_bot.db')
         
-        if not novels:
-            print("数据库中没有小说记录")
-            return
-            
-        print(f"找到 {len(novels)} 本小说:")
-        for novel in novels:
-            print(f"- {novel.title} (ID: {novel.id})")
-            
-        confirm = input("确认要删除所有小说数据吗？(y/n): ")
-        if confirm.lower() != 'y':
-            print("取消操作")
-            return
-            
-        # 删除所有数据
-        session.query(Vote).delete()
-        session.query(PlotOption).delete()
-        session.query(Chapter).delete()
-        session.query(Novel).delete()
+        # Connect to database
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
         
-        session.commit()
-        print("所有数据已清理完成")
+        # Get current time
+        current_time = datetime.now()
+        
+        # Calculate cutoff time (30 days ago)
+        cutoff_time = current_time - timedelta(days=30)
+        cutoff_str = cutoff_time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # Delete old novels and related records
+        cursor.execute("""
+            DELETE FROM votes 
+            WHERE plot_option_id IN (
+                SELECT id FROM plot_options 
+                WHERE novel_id IN (
+                    SELECT id FROM novels 
+                    WHERE created_at < ?
+                )
+            )
+        """, (cutoff_str,))
+        
+        cursor.execute("""
+            DELETE FROM plot_options 
+            WHERE novel_id IN (
+                SELECT id FROM novels 
+                WHERE created_at < ?
+            )
+        """, (cutoff_str,))
+        
+        cursor.execute("""
+            DELETE FROM chapters 
+            WHERE novel_id IN (
+                SELECT id FROM novels 
+                WHERE created_at < ?
+            )
+        """, (cutoff_str,))
+        
+        cursor.execute("DELETE FROM novels WHERE created_at < ?", (cutoff_str,))
+        
+        # Commit changes
+        conn.commit()
+        print("Database cleanup completed")
         
     except Exception as e:
-        print(f"清理数据库时出错: {str(e)}")
-        session.rollback()
+        print(f"Error during database cleanup: {str(e)}")
     finally:
-        session.close()
+        conn.close()
 
 if __name__ == "__main__":
     clean_database() 

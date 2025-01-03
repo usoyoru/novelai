@@ -1,38 +1,48 @@
-import sqlite3
-import json
-from datetime import datetime
+from app.database import SessionLocal
+from app.models.novel import Novel, Chapter, PlotOption, Vote
 
-def print_table_contents(cursor, table_name):
-    print(f"\n=== {table_name} 表内容 ===")
-    cursor.execute(f"SELECT * FROM {table_name}")
-    rows = cursor.fetchall()
-    
-    # 获取列名
-    cursor.execute(f"PRAGMA table_info({table_name})")
-    columns = [column[1] for column in cursor.fetchall()]
-    
-    # 打印每一行
-    for row in rows:
-        print("\n---")
-        for col_name, value in zip(columns, row):
-            if isinstance(value, str) and len(value) > 100:
-                print(f"{col_name}: {value[:100]}...")
-            else:
-                print(f"{col_name}: {value}")
-
-def main():
-    conn = sqlite3.connect('novel_bot.db')
-    cursor = conn.cursor()
-    
-    # 查看所有表的内容
-    tables = ['novels', 'chapters', 'plot_options', 'votes']
-    for table in tables:
-        try:
-            print_table_contents(cursor, table)
-        except sqlite3.OperationalError as e:
-            print(f"\n表 {table} 不存在或无法访问: {str(e)}")
-    
-    conn.close()
+def check_database():
+    """Check database status and display summary"""
+    try:
+        # Create database session
+        db = SessionLocal()
+        
+        # Get all novels
+        novels = db.query(Novel).all()
+        print(f"\nFound {len(novels)} novels:")
+        
+        for novel in novels:
+            print(f"\nNovel: {novel.title}")
+            print(f"ID: {novel.id}")
+            print(f"Genre: {novel.genre}")
+            print(f"Current Chapter: {novel.current_chapter}")
+            print(f"Created at: {novel.created_at}")
+            
+            # Get chapters
+            chapters = db.query(Chapter).filter(Chapter.novel_id == novel.id).all()
+            print(f"Total Chapters: {len(chapters)}")
+            
+            # Get plot options
+            plot_options = db.query(PlotOption).filter(PlotOption.novel_id == novel.id).all()
+            print(f"Total Plot Options: {len(plot_options)}")
+            
+            # Get votes
+            votes = db.query(Vote).join(PlotOption).filter(PlotOption.novel_id == novel.id).all()
+            print(f"Total Votes: {len(votes)}")
+            
+            print("\nLatest Plot Options:")
+            latest_options = db.query(PlotOption).filter(
+                PlotOption.novel_id == novel.id,
+                PlotOption.chapter_number == novel.current_chapter
+            ).all()
+            
+            for option in latest_options:
+                print(f"Option {option.option_id}: {option.title} (Votes: {option.votes_count})")
+        
+    except Exception as e:
+        print(f"Error checking database: {str(e)}")
+    finally:
+        db.close()
 
 if __name__ == "__main__":
-    main() 
+    check_database() 

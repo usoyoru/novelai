@@ -25,7 +25,10 @@ class AIService:
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable not set")
         
-        self.client = OpenAI(api_key=api_key)
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url="https://api.openai.com/v1"  # 确保使用正确的 API 端点
+        )
         logger.info("AI service initialization completed")
 
     async def generate_outline(self, title: str, genre: str) -> str:

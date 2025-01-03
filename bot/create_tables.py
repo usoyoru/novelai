@@ -1,12 +1,10 @@
-from app.database import init_db
+from app.database import engine
+from app.models.novel import Base
 
-def create_tables():
-    """Create all database tables"""
-    try:
-        init_db()
-        print("Database tables created successfully")
-    except Exception as e:
-        print(f"Error creating tables: {str(e)}")
+def init_db():
+    Base.metadata.create_all(bind=engine)
 
 if __name__ == "__main__":
-    create_tables() 
+    print("Creating database tables...")
+    init_db()
+    print("Database tables created successfully!") 

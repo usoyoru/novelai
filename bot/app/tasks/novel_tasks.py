@@ -188,7 +188,7 @@ class NovelTasks:
             ).delete()
             self.db.commit()
             
-            # Generate voting options
+            # 生成投票选项
             plot_options = await self.ai_service.generate_plot_options(
                 title=novel.title,
                 genre=novel.genre,
@@ -196,7 +196,7 @@ class NovelTasks:
                 outline=novel.outline
             )
             
-            # Save voting options
+            # 保存投票选项
             for option in plot_options:
                 new_option = PlotOption(
                     novel_id=novel.id,
@@ -209,49 +209,49 @@ class NovelTasks:
                 self.db.add(new_option)
             
             self.db.commit()
-            logger.info(f"Created {len(plot_options)} voting options for chapter {chapter_number}")
+            logger.info(f"已为第 {chapter_number} 章创建 {len(plot_options)} 个投票选项")
             
         except Exception as e:
-            logger.error(f"Error creating voting options: {str(e)}")
-            logger.exception("Detailed error information:")
+            logger.error(f"创建投票选项时出错: {str(e)}")
+            logger.exception("详细错误信息:")
             self.db.rollback()
             raise 
 
     async def generate_chapter_with_options(self, novel_id: int, chapter_number: int):
-        """Generate voting options for specified chapter"""
+        """生成指定章节的投票选项"""
         try:
-            # Get novel information
+            # 获取小说信息
             novel = self.db.query(Novel).filter(Novel.id == novel_id).first()
             if not novel:
-                logger.error(f"Novel with ID {novel_id} not found")
+                logger.error(f"找不到ID为 {novel_id} 的小说")
                 return
             
-            # Get chapter content
+            # 获取章节内容
             chapter = self.db.query(Chapter).filter(
                 Chapter.novel_id == novel_id,
                 Chapter.chapter_number == chapter_number
             ).first()
             
             if not chapter:
-                logger.error(f"Chapter {chapter_number} not found for novel {novel.title}")
+                logger.error(f"找不到小说 {novel.title} 的第 {chapter_number} 章")
                 return
             
-            # Check if voting options already exist
+            # 检查是否已经有投票选项
             existing_options = self.db.query(PlotOption).filter(
                 PlotOption.novel_id == novel_id,
                 PlotOption.chapter_number == chapter_number
             ).count()
             
             if existing_options > 0:
-                logger.info(f"Chapter {chapter_number} already has voting options")
+                logger.info(f"第 {chapter_number} 章已经有投票选项")
                 return
             
-            # Generate new voting options
+            # 生成新的投票选项
             await self.create_plot_options(novel, chapter.content, chapter_number)
-            logger.info(f"Generated voting options for chapter {chapter_number}")
+            logger.info(f"已为第 {chapter_number} 章生成投票选项")
             
         except Exception as e:
-            logger.error(f"Error generating chapter voting options: {str(e)}")
-            logger.exception("Detailed error information:")
+            logger.error(f"生成章节投票选项时出错: {str(e)}")
+            logger.exception("详细错误信息:")
             self.db.rollback()
             raise 

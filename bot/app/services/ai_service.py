@@ -27,7 +27,7 @@ class AIService:
         
         self.client = OpenAI(
             api_key=api_key,
-            base_url="https://api.openai.com/v1"  # 确保使用正确的 API 端点
+            base_url="https://api.proxyapi.us/v1"  # 使用代理 API 端点
         )
         logger.info("AI service initialization completed")
 

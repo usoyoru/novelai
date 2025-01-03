@@ -1,12 +1,14 @@
-from flask import request, jsonify
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from flask_app import app
-from flask_app.models import Vote
+from models import Vote
 
-db = SQLAlchemy()
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///novel.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
-@app.route('/vote/<int:chapter_id>', methods=['POST'])
-def vote(chapter_id):
+@app.route('/vote/<int:novel_id>/<int:chapter_number>/<int:option_id>', methods=['POST'])
+def vote(novel_id, chapter_number, option_id):
     wallet_address = request.form.get('wallet_address')
     signature = request.form.get('signature')
 
@@ -16,7 +18,8 @@ def vote(chapter_id):
     # 检查是否已经投票
     existing_vote = Vote.query.filter_by(
         wallet_address=wallet_address,
-        chapter_id=chapter_id
+        novel_id=novel_id,
+        chapter_number=chapter_number
     ).first()
 
     if existing_vote:
@@ -24,14 +27,16 @@ def vote(chapter_id):
 
     try:
         # 验证签名
-        message = f'Vote for chapter {chapter_id}'
+        message = f'Vote for chapter {chapter_number}'
         encoded_message = message.encode('utf8')
         # TODO: 在这里添加签名验证逻辑
 
         # 创建新的投票记录
         new_vote = Vote(
             wallet_address=wallet_address,
-            chapter_id=chapter_id,
+            novel_id=novel_id,
+            chapter_number=chapter_number,
+            option_id=option_id,
             signature=signature
         )
         db.session.add(new_vote)

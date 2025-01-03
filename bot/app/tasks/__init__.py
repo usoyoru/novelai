@@ -1,0 +1,1 @@
+from .novel_tasks import NovelTasks 

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ novel.title }} - AI Interactive Novel</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <nav>
+                <a href="/" class="back-link">Back to Home</a>
+            </nav>
+            <h1>{{ novel.title }}</h1>
+            <div class="novel-meta">
+                <span class="genre-tag">{{ novel.genre }}</span>
+                <span class="chapter-count">Chapter {{ novel.current_chapter }}</span>
+                <span class="created-at">Created on {{ novel.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="novel-detail">
+            <div class="novel-info-card">
+                <h2>Story Synopsis</h2>
+                <p>{{ novel.outline }}</p>
+                <div class="novel-stats">
+                    <div class="stat">
+                        <span class="stat-number">{{ novel.current_chapter }}</span>
+                        <span class="stat-label">Chapters</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">{{ chapters|length }}</span>
+                        <span class="stat-label">Completed</span>
+                    </div>
+                </div>
+
+                {% if latest_options %}
+                <div class="current-vote">
+                    <h3>Current Vote</h3>
+                    <p>Voting in progress for Chapter {{ novel.current_chapter }}</p>
+                    <div class="vote-progress">
+                        {% for option in latest_options %}
+                        <div class="vote-option-mini">
+                            <span class="option-title">{{ option.title }}</span>
+                            <span class="vote-count">{{ option.votes_count }} votes</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <a href="/vote/{{ novel.id }}/{{ novel.current_chapter }}" class="vote-now-btn">
+                        Vote Now
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="chapters-section">
+                <h2>Chapter List</h2>
+                {% if chapters %}
+                <div class="chapter-grid">
+                    {% for chapter in chapters %}
+                    <article class="chapter-card">
+                        <div class="chapter-header">
+                            <h3>
+                                <a href="/chapter/{{ novel.id }}/{{ chapter.chapter_number }}">
+                                    Chapter {{ chapter.chapter_number }}
+                                </a>
+                            </h3>
+                            <span class="chapter-date">{{ chapter.created_at.strftime('%Y-%m-%d') }}</span>
+                        </div>
+                        <div class="chapter-preview">
+                            <p>{{ chapter.content[:100] }}...</p>
+                        </div>
+                        <div class="chapter-footer">
+                            <a href="/chapter/{{ novel.id }}/{{ chapter.chapter_number }}" class="read-more">Read More</a>
+                            {% if chapter.tweet_id %}
+                            <a href="https://twitter.com/XBYM_AURORA/status/{{ chapter.tweet_id }}" 
+                               target="_blank" 
+                               class="tweet-link">
+                                View on Twitter
+                            </a>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-chapters">
+                    <h3>No Chapters Yet</h3>
+                    <p>New chapters are being created, please check back later...</p>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About AI Interactive Novel</h3>
+                <p>This is an AI-powered interactive novel platform where readers' votes determine the story's development.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <a href="https://twitter.com/XBYM_AURORA" target="_blank" class="social-link">Twitter</a>
+            </div>
+            <div class="footer-section">
+                <h3>Update Frequency</h3>
+                <p>Vote results are checked every minute, new chapters are generated in real-time</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 AI Interactive Novel | Explore Infinite Possibilities</p>
+        </div>
+    </footer>
+</body>
+</html> 

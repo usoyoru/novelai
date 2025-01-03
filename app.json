@@ -1,0 +1,35 @@
+{
+  "name": "Twitter Novel Bot",
+  "description": "一个自动生成小说并在Twitter上发布的机器人",
+  "repository": "https://github.com/yourusername/twitter-novel-bot",
+  "keywords": ["python", "twitter", "bot", "novel", "ai"],
+  "env": {
+    "OPENAI_API_KEY": {
+      "description": "OpenAI API密钥"
+    },
+    "TWITTER_API_KEY": {
+      "description": "Twitter API密钥"
+    },
+    "TWITTER_API_SECRET": {
+      "description": "Twitter API密钥密文"
+    },
+    "TWITTER_ACCESS_TOKEN": {
+      "description": "Twitter访问令牌"
+    },
+    "TWITTER_ACCESS_TOKEN_SECRET": {
+      "description": "Twitter访问令牌密文"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL数据库URL",
+      "value": "postgresql://localhost/twitter_novel_bot"
+    }
+  },
+  "addons": [
+    "heroku-postgresql"
+  ],
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+} 

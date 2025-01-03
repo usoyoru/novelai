@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter {{ chapter.chapter_number }} - {{ novel.title }} - AI Interactive Novel</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <nav>
+                <a href="/" class="back-link">Back to Home</a>
+                <a href="/novel/{{ novel.id }}" class="back-link">Back to Novel</a>
+            </nav>
+            <h1>{{ novel.title }}</h1>
+            <div class="novel-meta">
+                <span class="genre-tag">{{ novel.genre }}</span>
+                <span class="chapter-count">Chapter {{ chapter.chapter_number }}</span>
+                <span class="created-at">Created on {{ chapter.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="chapter-container">
+            <div class="chapter-title">
+                <h2>Chapter {{ chapter.chapter_number }}</h2>
+                <div class="meta">
+                    <span class="chapter-date">{{ chapter.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                </div>
+            </div>
+
+            <div class="chapter-body">
+                {{ chapter.content }}
+            </div>
+
+            {% if plot_options %}
+            <div class="chapter-vote">
+                <h3>Vote for Next Chapter</h3>
+                <p>Your choice will determine the story's direction!</p>
+                <a href="/vote/{{ novel.id }}/{{ chapter.chapter_number }}" class="vote-link">
+                    Vote Now
+                </a>
+            </div>
+            {% endif %}
+
+            <div class="chapter-navigation">
+                {% if chapter.chapter_number > 1 %}
+                <a href="/chapter/{{ novel.id }}/{{ chapter.chapter_number - 1 }}" class="prev-chapter">
+                    Previous Chapter
+                </a>
+                {% endif %}
+                
+                <a href="/novel/{{ novel.id }}" class="back-to-novel">
+                    Back to Contents
+                </a>
+                
+                {% if chapter.chapter_number < novel.current_chapter %}
+                <a href="/chapter/{{ novel.id }}/{{ chapter.chapter_number + 1 }}" class="next-chapter">
+                    Next Chapter
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="social-share">
+                {% if chapter.tweet_id %}
+                <a href="https://twitter.com/XBYM_AURORA/status/{{ chapter.tweet_id }}" 
+                   target="_blank" 
+                   class="tweet-link">
+                    View on Twitter
+                </a>
+                {% endif %}
+                <a href="https://twitter.com/XBYM_AURORA" 
+                   target="_blank" 
+                   class="follow-link">
+                    Follow Author
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About AI Interactive Novel</h3>
+                <p>This is an AI-powered interactive novel platform where readers' votes determine the story's development.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <a href="https://twitter.com/XBYM_AURORA" target="_blank" class="social-link">Twitter</a>
+            </div>
+            <div class="footer-section">
+                <h3>Update Frequency</h3>
+                <p>Vote results are checked every minute, new chapters are generated in real-time</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 AI Interactive Novel | Explore Infinite Possibilities</p>
+        </div>
+    </footer>
+</body>
+</html> 

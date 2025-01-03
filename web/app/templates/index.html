@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interactive Novel - Explore Infinite Possibilities</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>AI Interactive Novel</h1>
+            <p class="subtitle">Explore infinite story possibilities created by AI and shaped by readers</p>
+            <div class="header-stats">
+                <div class="stat">
+                    <span class="stat-number">{{ novels|length }}</span>
+                    <span class="stat-label">Novels</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number">{{ novels|sum(attribute='current_chapter') }}</span>
+                    <span class="stat-label">Chapters</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="filter-bar">
+            <h2>Latest Works</h2>
+            <div class="sort-options">
+                <button class="active">Latest</button>
+                <button>Most Chapters</button>
+            </div>
+        </div>
+
+        <section class="novels">
+            {% for novel in novels %}
+            <article class="novel-card">
+                <div class="novel-meta">
+                    <span class="genre-tag">{{ novel.genre }}</span>
+                    <span class="chapter-count">Chapter {{ novel.current_chapter }}</span>
+                </div>
+                <h2><a href="/novel/{{ novel.id }}">{{ novel.title }}</a></h2>
+                <div class="novel-info">
+                    <p class="created-at">Created on {{ novel.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <div class="novel-outline">
+                    <h3>Synopsis</h3>
+                    <p>{{ novel.outline[:200] }}...</p>
+                </div>
+                <div class="card-actions">
+                    <a href="/novel/{{ novel.id }}" class="read-more">Start Reading</a>
+                    <a href="https://twitter.com/XBYM_AURORA" target="_blank" class="twitter-link">
+                        Follow on Twitter
+                    </a>
+                </div>
+            </article>
+            {% else %}
+            <div class="no-novels">
+                <h3>No Novels Yet</h3>
+                <p>New stories are being created, please check back later...</p>
+            </div>
+            {% endfor %}
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About AI Interactive Novel</h3>
+                <p>This is an AI-powered interactive novel platform where readers' votes determine the story's development.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Follow Us</h3>
+                <a href="https://twitter.com/XBYM_AURORA" target="_blank" class="social-link">Twitter</a>
+            </div>
+            <div class="footer-section">
+                <h3>Update Frequency</h3>
+                <p>Vote results are checked every minute, new chapters are generated in real-time</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 AI Interactive Novel | Explore Infinite Possibilities</p>
+        </div>
+    </footer>
+</body>
+</html> 

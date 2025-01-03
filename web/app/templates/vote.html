@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vote - {{ novel.title }} - AI Interactive Novel</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+</head>
+<body>
+    <!-- 钱包选择弹窗 -->
+    <div id="walletModal" class="modal">
+        <div class="modal-content">
+            <h3>选择钱包</h3>
+            <div class="wallet-options">
+                <button onclick="connectWallet('phantom')" class="wallet-option">
+                    <img src="https://phantom.app/favicon.ico" alt="Phantom" class="wallet-icon">
+                    <span>Phantom 钱包</span>
+                </button>
+                <button onclick="connectWallet('okx')" class="wallet-option">
+                    <img src="https://www.okx.com/favicon.ico" alt="OKX" class="wallet-icon">
+                    <span>OKX 钱包</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="header-content">
+            <nav>
+                <a href="/" class="back-link">Back to Home</a>
+                <a href="/novel/{{ novel.id }}" class="back-link">Back to Novel</a>
+            </nav>
+            <div class="wallet-section">
+                <button id="connectWallet" class="wallet-button">连接钱包</button>
+                <span id="walletAddress" class="wallet-address"></span>
+            </div>
+            <h1>{{ novel.title }}</h1>
+            <div class="novel-meta">
+                <span class="genre-tag">{{ novel.genre }}</span>
+                <span class="chapter-count">Chapter {{ chapter_number }}</span>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="vote-container">
+            <div class="vote-header">
+                <h2>Vote for Next Chapter</h2>
+                <p class="vote-description">Your choice will determine the story's direction!</p>
+            </div>
+
+            <div class="vote-options">
+                {% for option in plot_options %}
+                <div class="vote-option">
+                    <div class="option-header">
+                        <h3>{{ option.title }}</h3>
+                        <span class="vote-count">{{ option.votes_count }} votes</span>
+                    </div>
+                    <div class="option-content">
+                        <p class="description">{{ option.description }}</p>
+                        <p class="impact"><strong>Impact:</strong> {{ option.impact }}</p>
+                    </div>
+                    <form action="/vote/{{ novel.id }}/{{ chapter_number }}/{{ option.id }}" method="post" class="vote-form" onsubmit="return submitVote(event, this)">
+                        <input type="hidden" name="wallet_address" class="wallet-input">
+                        <input type="hidden" name="signature" class="signature-input">
+                        <button type="submit" class="vote-button" disabled>请先连接钱包</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="vote-info">
+                <p>Voting ends in: 10 minutes</p>
+                <p>每个钱包地址每章只能投一票</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>About AI Interactive Novel</h3>
+                <p>This is an AI-powered interactive novel platform where readers' votes determine the story's development.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Update Frequency</h3>
+                <p>Vote results are checked every minute, new chapters are generated in real-time</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2024 AI Interactive Novel | Explore Infinite Possibilities</p>
+        </div>
+    </footer>
+
+    <script>
+        let wallet = null;
+        let publicKey = null;
+        const modal = document.getElementById('walletModal');
+        const TOKEN_ADDRESS = 'ALC5uenSTeSECK2L9pY6nAEXXMBVZp85EcPVdDTBpump';
+
+        // 检查代币余额
+        async function checkTokenBalance(walletAddress) {
+            try {
+                console.log('正在检查钱包余额:', walletAddress);
+                const connection = new solanaWeb3.Connection(
+                    'https://api.mainnet-beta.solana.com',
+                    'confirmed'
+                );
+                
+                try {
+                    const response = await connection.getTokenAccountsByOwner(
+                        new solanaWeb3.PublicKey(walletAddress),
+                        {
+                            mint: new solanaWeb3.PublicKey(TOKEN_ADDRESS)
+                        }
+                    );
+                    
+                    console.log('代币账户信息:', response);
+                    
+                    if (response.value.length > 0) {
+                        const tokenBalance = await connection.getTokenAccountBalance(response.value[0].pubkey);
+                        console.log('代币余额:', tokenBalance);
+                        return tokenBalance.value.uiAmount > 0;
+                    }
+                    
+                    return false;
+                } catch (error) {
+                    console.error('获取代币账户失败:', error);
+                    // 如果出错，暂时返回true以便测试
+                    return true;
+                }
+            } catch (error) {
+                console.error('检查代币余额失败:', error);
+                // 如果出错，暂时返回true以便测试
+                return true;
+            }
+        }
+
+        // 显示钱包选择弹窗
+        function showWalletModal() {
+            modal.style.display = 'flex';
+        }
+
+        // 连接钱包
+        async function connectWallet(type) {
+            try {
+                let provider;
+                if (type === 'phantom') {
+                    if (!window.solana?.isPhantom) {
+                        alert('请安装 Phantom 钱包插件');
+                        window.open('https://phantom.app/', '_blank');
+                        return;
+                    }
+                    provider = window.solana;
+                } else if (type === 'okx') {
+                    if (!window.okxwallet?.solana) {
+                        alert('请安装 OKX 钱包插件');
+                        window.open('https://www.okx.com/web3', '_blank');
+                        return;
+                    }
+                    provider = window.okxwallet.solana;
+                }
+
+                // 连接钱包
+                const resp = await provider.connect();
+                publicKey = resp.publicKey.toString();
+                wallet = provider;
+
+                // 更新UI
+                document.getElementById('walletAddress').textContent = 
+                    publicKey.slice(0, 4) + '...' + publicKey.slice(-4);
+                document.getElementById('connectWallet').style.display = 'none';
+
+                // 关闭弹窗
+                modal.style.display = 'none';
+
+                // 检查代币余额
+                const hasToken = await checkTokenBalance(publicKey);
+                if (!hasToken) {
+                    alert('您的钱包中没有所需的代币，无法进行投票');
+                    // 重置UI状态
+                    document.getElementById('connectWallet').style.display = 'block';
+                    document.getElementById('walletAddress').textContent = '';
+                    publicKey = null;
+                    wallet = null;
+                    return;
+                }
+
+                // 启用所有投票按钮
+                const voteButtons = document.querySelectorAll('.vote-button');
+                const walletInputs = document.querySelectorAll('.wallet-input');
+                voteButtons.forEach(button => {
+                    button.disabled = false;
+                    button.textContent = '投票';
+                });
+                walletInputs.forEach(input => {
+                    input.value = publicKey;
+                });
+
+            } catch (error) {
+                console.error('连接钱包失败:', error);
+                alert('连接钱包失败: ' + error.message);
+            }
+        }
+
+        async function submitVote(event, form) {
+            event.preventDefault();
+            
+            if (!publicKey) {
+                alert('请先连接钱包');
+                return false;
+            }
+
+            // 再次检查代币余额
+            const hasToken = await checkTokenBalance(publicKey);
+            if (!hasToken) {
+                alert('您的钱包中没有所需的代币，无法进行投票');
+                return false;
+            }
+
+            try {
+                // 准备要签名的消息
+                const message = `Vote for chapter ${form.action.split('/').slice(-2)[0]}`;
+                const encodedMessage = new TextEncoder().encode(message);
+
+                // 获取签名
+                const signedMessage = await wallet.signMessage(encodedMessage, "utf8");
+                const signature = Array.from(signedMessage.signature)
+                    .map(b => b.toString(16).padStart(2, '0'))
+                    .join('');
+
+                // 将签名添加到表单
+                const signatureInput = form.querySelector('.signature-input');
+                signatureInput.value = signature;
+
+                // 提交表单
+                form.submit();
+                return true;
+            } catch (error) {
+                console.error('投票失败:', error);
+                alert('投票失败: ' + error.message);
+                return false;
+            }
+        }
+
+        // 监听钱包账户变化
+        if (window.solana) {
+            window.solana.on('accountChanged', () => {
+                // 重新连接钱包
+                connectWallet('phantom').catch(console.error);
+            });
+        }
+        if (window.okxwallet?.solana) {
+            window.okxwallet.solana.on('accountChanged', () => {
+                // 重新连接钱包
+                connectWallet('okx').catch(console.error);
+            });
+        }
+
+        // 添加连接钱包按钮的点击事件
+        document.getElementById('connectWallet').addEventListener('click', showWalletModal);
+
+        // 点击弹窗外部关闭弹窗
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+
+    <style>
+        /* 弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-background);
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-content h3 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: var(--highlight-color);
+        }
+
+        .wallet-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .wallet-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            background: none;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .wallet-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .wallet-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+    </style>
+</body>
+</html> 

@@ -30,10 +30,10 @@ logger.info("Database initialization completed")
 app = FastAPI(title="Novel Website")
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="web/app/static"), name="static")
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Set up templates
-templates = Jinja2Templates(directory="web/app/templates")
+templates = Jinja2Templates(directory="app/templates")
 
 # Dependencies
 def get_db():

@@ -11,6 +11,7 @@ from solders.pubkey import Pubkey
 import nacl.signing
 import nacl.encoding
 import logging
+import uvicorn
 
 # Add project root directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -29,10 +30,10 @@ logger.info("Database initialization completed")
 app = FastAPI(title="Novel Website")
 
 # Mount static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+app.mount("/static", StaticFiles(directory="web/app/static"), name="static")
 
 # Set up templates
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="web/app/templates")
 
 # Dependencies
 def get_db():
@@ -256,3 +257,7 @@ async def check_vote(
     except Exception as e:
         logger.error(f"Error in check_vote route: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e)) 
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 4169))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=False) 

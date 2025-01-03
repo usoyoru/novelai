@@ -86,6 +86,12 @@ async def chapter_detail(
 ):
     """Chapter detail page"""
     try:
+        # Get novel
+        novel = db.query(Novel).filter(Novel.id == novel_id).first()
+        if not novel:
+            raise HTTPException(status_code=404, detail="Novel not found")
+            
+        # Get chapter
         chapter = db.query(Chapter).filter(
             Chapter.novel_id == novel_id,
             Chapter.chapter_number == chapter_number
@@ -94,6 +100,7 @@ async def chapter_detail(
         if not chapter:
             raise HTTPException(status_code=404, detail="Chapter not found")
             
+        # Get plot options
         plot_options = db.query(PlotOption).filter(
             PlotOption.novel_id == novel_id,
             PlotOption.chapter_number == chapter_number
@@ -103,6 +110,7 @@ async def chapter_detail(
             "chapter.html",
             {
                 "request": request,
+                "novel": novel,
                 "chapter": chapter,
                 "plot_options": plot_options
             }

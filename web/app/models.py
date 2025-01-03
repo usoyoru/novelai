@@ -4,6 +4,7 @@ from datetime import datetime
 db = SQLAlchemy()
 
 class Vote(db.Model):
+    """Vote model for storing user votes on novel chapters"""
     id = db.Column(db.Integer, primary_key=True)
     wallet_address = db.Column(db.String(44), nullable=False)
     novel_id = db.Column(db.Integer, nullable=False)

@@ -7,34 +7,34 @@ import sys
 import os
 from datetime import datetime, timedelta, timezone
 import base58
-from solders.pubkey import Pubkey
+from solana.publickey import PublicKey
 import nacl.signing
 import nacl.encoding
 import logging
 
-# 添加项目根目录到Python路径
+# Add project root directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from bot.app.models.novel import Novel, Chapter, PlotOption, Vote
 from bot.app.database import SessionLocal, engine, Base, init_db
 
-# 配置日志
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 初始化数据库
+# Initialize database
 init_db()
-logger.info("数据库初始化完成")
+logger.info("Database initialization completed")
 
 app = FastAPI(title="Novel Website")
 
-# 挂载静态文件
+# Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
-# 设置模板
+# Set up templates
 templates = Jinja2Templates(directory="app/templates")
 
-# 依赖项
+# Dependencies
 def get_db():
     db = SessionLocal()
     try:
@@ -44,7 +44,7 @@ def get_db():
 
 @app.get("/")
 async def home(request: Request, db: Session = Depends(get_db)):
-    """首页，显示所有小说列表"""
+    """Home page, displays all novels"""
     try:
         novels = db.query(Novel).order_by(Novel.created_at.desc()).all()
         return templates.TemplateResponse(
@@ -57,17 +57,17 @@ async def home(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/novel/{novel_id}")
 async def novel_detail(request: Request, novel_id: int, db: Session = Depends(get_db)):
-    """小说详情页，显示所有章节"""
+    """Novel detail page, displays all chapters"""
     try:
         novel = db.query(Novel).filter(Novel.id == novel_id).first()
         if not novel:
-            raise HTTPException(status_code=404, detail="小说未找到")
+            raise HTTPException(status_code=404, detail="Novel not found")
             
         chapters = db.query(Chapter).filter(
             Chapter.novel_id == novel_id
         ).order_by(Chapter.chapter_number).all()
         
-        # 获取最新章节的投票选项
+        # Get voting options for the latest chapter
         latest_options = db.query(PlotOption).filter(
             PlotOption.novel_id == novel_id,
             PlotOption.chapter_number == novel.current_chapter
@@ -93,7 +93,7 @@ async def chapter_detail(
     chapter_number: int,
     db: Session = Depends(get_db)
 ):
-    """章节详情页"""
+    """Chapter detail page"""
     try:
         chapter = db.query(Chapter).filter(
             Chapter.novel_id == novel_id,
@@ -101,25 +101,25 @@ async def chapter_detail(
         ).first()
         
         if not chapter:
-            raise HTTPException(status_code=404, detail="章节未找到")
+            raise HTTPException(status_code=404, detail="Chapter not found")
             
         novel = db.query(Novel).filter(Novel.id == novel_id).first()
         if not novel:
-            raise HTTPException(status_code=404, detail="小说未找到")
+            raise HTTPException(status_code=404, detail="Novel not found")
         
-        # 获取本章的投票选项
+        # Get voting options for this chapter
         plot_options = db.query(PlotOption).filter(
             PlotOption.novel_id == novel_id,
             PlotOption.chapter_number == chapter_number
-        ).order_by(PlotOption.created_at.desc()).limit(4).all()  # 只获取最新的4个选项
+        ).order_by(PlotOption.created_at.desc()).limit(4).all()  # Only get latest 4 options
         
-        # 如果有选项，确保它们是同一批次的（创建时间相同）
+        # If there are options, ensure they are from the same batch (same creation time)
         if plot_options:
             latest_created_at = plot_options[0].created_at
             plot_options = [opt for opt in plot_options if opt.created_at == latest_created_at]
         
         if not plot_options:
-            raise HTTPException(status_code=404, detail="投票选项未找到")
+            raise HTTPException(status_code=404, detail="Voting options not found")
         
         return templates.TemplateResponse(
             "chapter.html",
@@ -141,11 +141,11 @@ async def vote_page(
     chapter_number: int,
     db: Session = Depends(get_db)
 ):
-    """投票页面"""
+    """Vote page"""
     try:
         novel = db.query(Novel).filter(Novel.id == novel_id).first()
         if not novel:
-            raise HTTPException(status_code=404, detail="小说未找到")
+            raise HTTPException(status_code=404, detail="Novel not found")
             
         plot_options = db.query(PlotOption).filter(
             PlotOption.novel_id == novel_id,
@@ -153,7 +153,7 @@ async def vote_page(
         ).all()
         
         if not plot_options:
-            raise HTTPException(status_code=404, detail="投票选项未找到")
+            raise HTTPException(status_code=404, detail="Voting options not found")
             
         return templates.TemplateResponse(
             "vote.html",
@@ -178,28 +178,28 @@ async def submit_vote(
     signature: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    """提交投票"""
+    """Submit vote"""
     try:
-        # 验证钱包地址格式
+        # Validate wallet address format
         try:
-            public_key = Pubkey.from_string(wallet_address)
+            public_key = PublicKey(wallet_address)
         except ValueError:
-            raise HTTPException(status_code=400, detail="无效的钱包地址")
+            raise HTTPException(status_code=400, detail="Invalid wallet address")
             
-        # 验证签名
+        # Verify signature
         try:
             message = f"Vote for chapter {chapter_number}"
             message_bytes = message.encode('utf-8')
             signature_bytes = bytes.fromhex(signature)
             
-            # 使用公钥验证签名
+            # Verify signature using public key
             verify_key = nacl.signing.VerifyKey(bytes(public_key))
             verify_key.verify(message_bytes, signature_bytes)
         except Exception as e:
-            logger.error(f"签名验证失败: {str(e)}")
-            raise HTTPException(status_code=400, detail="签名验证失败")
+            logger.error(f"Signature verification failed: {str(e)}")
+            raise HTTPException(status_code=400, detail="Signature verification failed")
         
-        # 检查是否已经投过票
+        # Check if already voted
         existing_vote = db.query(Vote).join(PlotOption).filter(
             PlotOption.novel_id == novel_id,
             PlotOption.chapter_number == chapter_number,
@@ -213,9 +213,9 @@ async def submit_vote(
         ).first()
         
         if existing_vote:
-            raise HTTPException(status_code=400, detail="您已经投过票了")
+            raise HTTPException(status_code=400, detail="You have already voted")
             
-        # 获取投票选项
+        # Get voting option
         plot_option = db.query(PlotOption).filter(
             PlotOption.id == option_id,
             PlotOption.novel_id == novel_id,
@@ -223,9 +223,9 @@ async def submit_vote(
         ).first()
         
         if not plot_option:
-            raise HTTPException(status_code=404, detail="投票选项未找到")
+            raise HTTPException(status_code=404, detail="Voting option not found")
             
-        # 确保选项是最新的一批
+        # Ensure the option is from the latest batch
         latest_options = db.query(PlotOption).filter(
             PlotOption.novel_id == novel_id,
             PlotOption.chapter_number == chapter_number
@@ -234,32 +234,29 @@ async def submit_vote(
         if latest_options:
             latest_created_at = latest_options[0].created_at
             if plot_option.created_at != latest_created_at:
-                raise HTTPException(status_code=400, detail="投票选项已过期")
+                raise HTTPException(status_code=400, detail="Voting option has expired")
         
         try:
-            # 创建投票记录
+            # Create vote record
             vote = Vote(
                 plot_option_id=plot_option.id,
                 wallet_address=str(public_key)
             )
             db.add(vote)
             
-            # 更新票数
+            # Update vote count
             plot_option.votes_count += 1
             
-            # 提交事务
+            # Commit transaction
             db.commit()
+            
+            return {"detail": "Vote successful"}
+            
         except Exception as e:
             db.rollback()
-            logger.error(f"Error saving vote: {str(e)}")
-            raise HTTPException(status_code=500, detail="保存投票失败")
-        
-        # 重定向回投票页面
-        return Response(
-            status_code=303,
-            headers={"Location": f"/vote/{novel_id}/{chapter_number}"}
-        )
-        
+            logger.error(f"Database error: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to save vote")
+            
     except HTTPException:
         raise
     except Exception as e:

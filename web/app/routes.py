@@ -13,9 +13,9 @@ def vote(novel_id, chapter_number, option_id):
     signature = request.form.get('signature')
 
     if not wallet_address or not signature:
-        return jsonify({'detail': '缺少必要的参数'}), 400
+        return jsonify({'detail': 'Missing required parameters'}), 400
 
-    # 检查是否已经投票
+    # Check if already voted
     existing_vote = Vote.query.filter_by(
         wallet_address=wallet_address,
         novel_id=novel_id,
@@ -23,15 +23,15 @@ def vote(novel_id, chapter_number, option_id):
     ).first()
 
     if existing_vote:
-        return jsonify({'detail': '您已经为这个章节投过票了'}), 400
+        return jsonify({'detail': 'You have already voted for this chapter'}), 400
 
     try:
-        # 验证签名
+        # Verify signature
         message = f'Vote for chapter {chapter_number}'
         encoded_message = message.encode('utf8')
-        # TODO: 在这里添加签名验证逻辑
+        # TODO: Add signature verification logic here
 
-        # 创建新的投票记录
+        # Create new vote record
         new_vote = Vote(
             wallet_address=wallet_address,
             novel_id=novel_id,
@@ -42,8 +42,8 @@ def vote(novel_id, chapter_number, option_id):
         db.session.add(new_vote)
         db.session.commit()
 
-        return jsonify({'detail': '投票成功'}), 200
+        return jsonify({'detail': 'Vote successful'}), 200
 
     except Exception as e:
         db.session.rollback()
-        return jsonify({'detail': f'投票失败: {str(e)}'}), 500 
+        return jsonify({'detail': f'Vote failed: {str(e)}'}), 500 

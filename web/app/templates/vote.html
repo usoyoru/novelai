@@ -9,10 +9,10 @@
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 </head>
 <body>
-    <!-- 钱包选择弹窗 -->
+    <!-- Wallet Selection Modal -->
     <div id="walletModal" class="modal">
         <div class="modal-content">
-            <h3>选择钱包</h3>
+            <h3>Select Wallet</h3>
             <div class="wallet-options">
                 <button class="wallet-option" onclick="connectWallet('phantom')">
                     <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDgiIGhlaWdodD0iMTA4IiB2aWV3Qm94PSIwIDAgMTA4IDEwOCIgZmlsbD0ibm9uZSI+CjxyZWN0IHdpZHRoPSIxMDgiIGhlaWdodD0iMTA4IiByeD0iMjYiIGZpbGw9IiNBQjlGRjIiLz4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik00Ni41MjY3IDY5LjkyMjlDNDIuMDExOCA3MC42ODg5IDM3LjgxMDEgNjcuNTI2NyAzNy4wNDQxIDYzLjAxMThDMzYuMjc4MSA1OC40OTY5IDM5LjQ0MDMgNTQuMjk1MiA0My45NTUyIDUzLjUyOTJDNDguNDcwMSA1Mi43NjMyIDUyLjY3MTggNTUuOTI1NCA1My40Mzc4IDYwLjQ0MDNDNTQuMjAzOCA2NC45NTUyIDUxLjA0MTYgNjkuMTU2OSA0Ni41MjY3IDY5LjkyMjlaTTYzLjQ3NDEgNjkuOTIyOUM2Ny45ODkgNzAuNjg4OSA3Mi4xOTA3IDY3LjUyNjcgNzIuOTU2NyA2My4wMTE4QzczLjcyMjcgNTguNDk2OSA3MC41NjA1IDU0LjI9NTIgNjYuMDQ1NiA1My41MjkyQzYxLjUzMDcgNTIuNzYzMiA1Ny4zMjkgNTUuOTI1NCA1Ni41NjMgNjAuNDQwM0M1NS43OTcgNjQuOTU1MiA1OC45NTkyIDY5LjE1NjkgNjMuNDc0MSA2OS45MjI5Wk00MS4zNTc5IDc1LjA5MTZDNDEuMzU3OSA3My4yOTM0IDQyLjgxNDggNzEuODM2NSA0NC42MTMgNzEuODM2NUM0Ni40MTEyIDcxLjgzNjUgNDcuODY4MSA3My4yOTM0IDQ3Ljg2ODEgNzUuMDkxNkM0Ny44NjgxIDc2Ljg4OTggNDYuNDExMiA3OC4zNDY3IDQ0LjYxMyA3OC4zNDY3QzQyLjgxNDggNzguMzQ2NyA0MS4zNTc5IDc2Ljg4OTggNDEuMzU3OSA3NS4wOTE2Wk02Mi4xMzI3IDc1LjA5MTZDNjIuMTMyNyA3My4yOTM0IDYzLjU4OTYgNzEuODM2NSA2NS4zODc4IDcxLjgzNjVDNjcuMTg2IDcxLjgzNjUgNjguNjQyOSA3My4yOTM0IDY4LjY0MjkgNzUuMDkxNkM2OC42NDI5IDc2Ljg4OTggNjcuMTg2IDc4LjM0NjcgNjUuMzg3OCA3OC4zNDY3QzYzLjU4OTYgNzguMzQ2NyA2Mi4xMzI3IDc2Ljg4OTggNjIuMTMyNyA3NS4wOTE2WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTU0Ljk5NzkgODQuODU2OUM2OC43MjM3IDg0Ljg1NjkgNzkuOTM1OSA3My42NDQ3IDc5LjkzNTkgNTkuOTE4OUM3OS45MzU5IDQ2LjE5MzEgNjguNzIzNyAzNC45ODA5IDU0Ljk5NzkgMzQuOTgwOUM0MS4yNzIxIDM0Ljk4MDkgMzAuMDU5OSA0Ni4xOTMxIDMwLjA1OTkgNTkuOTE4OUMzMC4wNTk5IDczLjY0NDcgNDEuMjcyMSA4NC44NTY5IDU0Ljk5NzkgODQuODU2OVoiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4=" class="wallet-icon" alt="Phantom">
@@ -95,7 +95,7 @@
     </footer>
 
     <style>
-        /* 弹窗样式 */
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
@@ -154,7 +154,7 @@
             border-radius: 50%;
         }
 
-        /* 提示框样式 */
+        /* Alert Modal Styles */
         .alert-modal {
             display: none;
             position: fixed;
@@ -207,7 +207,7 @@
         }
     </style>
 
-    <!-- 提示框 -->
+    <!-- Alert Modal -->
     <div id="alertModal" class="alert-modal">
         <h3>Vote Notice</h3>
         <p id="alertMessage"></p>

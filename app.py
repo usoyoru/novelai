@@ -29,14 +29,14 @@ db = SQLAlchemy(app)
 TOKEN_ADDRESS = "ALC5uenSTeSECK2L9pY6nAEXXMBVZp85EcPVdDTBpump"
 SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
 
-# 添加处理锁
+
 processing_lock = threading.Lock()
 processed_stories = set()
 
 def check_token_balance(wallet_address):
     """Check if the wallet holds the required token"""
     try:
-        # 构建 RPC 请求
+        
         payload = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -176,7 +176,7 @@ def generate_options(chapter_content):
         content = response.choices[0].message.content
         options = []
         
-        # 分行处理返回的内容
+        
         lines = content.split('\n')
         current_option = ""
         
@@ -185,7 +185,7 @@ def generate_options(chapter_content):
             if not line:
                 continue
             
-            # 检查是否是新选项（以数字开头）
+            
             if (line.startswith('1.') or line.startswith('2.') or 
                 line.startswith('3.') or line.startswith('4.') or
                 line.startswith('1)') or line.startswith('2)') or
@@ -198,16 +198,16 @@ def generate_options(chapter_content):
                 if current_option:
                     current_option += " " + line
 
-        # 添加最后一个选项
+        
         if current_option:
             options.append(current_option.strip())
         
-        # 确保正好有4个选项
+       
         options = options[:4]
         while len(options) < 4:
             options.append(f"继续探索故事的第{len(options) + 1}个方向")
         
-        # 确保选项不为空且长度合适
+       
         final_options = []
         for i, opt in enumerate(options, 1):
             if not opt or len(opt.strip()) < 5:
@@ -219,7 +219,7 @@ def generate_options(chapter_content):
         
     except Exception as e:
         print(f"生成选项时出错: {e}")
-        # 返回默认选项
+        
         return [
             "让主角踏上一段惊险的冒险",
             "探索一个意想不到的转折",
@@ -239,7 +239,7 @@ def process_votes():
             
             for story in stories:
                 try:
-                    # 尝试获取锁
+                    
                     lock = ProcessLock(story_id=story.id)
                     db.session.add(lock)
                     db.session.commit()
@@ -252,11 +252,11 @@ def process_votes():
                     print(f"Processing story {story.id}")
                     options = Option.query.filter_by(story_id=story.id).all()
                     if options:
-                        # 找出得票最多的选项
+                        
                         winning_option = max(options, key=lambda x: x.votes)
                         print(f"Winning option: {winning_option.description} with {winning_option.votes} votes")
                         
-                        # 生成新章节
+                        
                         prompt = f"""Continue the story based on this choice: {winning_option.description}
 
 Previous chapter content:
@@ -267,7 +267,7 @@ Write the next chapter that follows this choice. Make it engaging and consistent
                         new_chapter = generate_chapter(prompt)
                         if new_chapter:
                             print("Successfully generated new chapter")
-                            # 创建新的故事记录
+                            
                             new_story = Story(
                                 title=story.title,
                                 content=f"Chapter {story.current_chapter + 1}:\n{new_chapter}",
@@ -275,17 +275,17 @@ Write the next chapter that follows this choice. Make it engaging and consistent
                                 next_update=current_time + timedelta(minutes=10)
                             )
                             db.session.add(new_story)
-                            db.session.flush()  # 获取新故事的ID
+                            db.session.flush() 
                             
-                            # 先删除相关的投票记录
+                           
                             print("Deleting votes...")
                             Vote.query.filter_by(story_id=story.id).delete()
                             
-                            # 再删除旧的选项
+                            
                             print("Deleting old options...")
                             Option.query.filter_by(story_id=story.id).delete()
                             
-                            # 生成新的选项
+                            
                             print("Generating new options...")
                             new_options = generate_options(new_chapter)
                             for opt in new_options:
@@ -299,7 +299,7 @@ Write the next chapter that follows this choice. Make it engaging and consistent
                     else:
                         print(f"No options found for story {story.id}")
                 finally:
-                    # 释放锁
+                    
                     try:
                         ProcessLock.query.filter_by(story_id=story.id).delete()
                         db.session.commit()
@@ -313,7 +313,7 @@ Write the next chapter that follows this choice. Make it engaging and consistent
 def get_token_info():
     """Get token supply and holder count"""
     try:
-        # 获取代币总供应量
+        
         supply_payload = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -324,7 +324,7 @@ def get_token_info():
         supply_response = requests.post(SOLANA_RPC_URL, json=supply_payload)
         supply_data = supply_response.json()
         
-        # 获取所有代币账户
+        
         accounts_payload = {
             "jsonrpc": "2.0",
             "id": 1,
@@ -401,7 +401,7 @@ def init_db():
     while retry_count < max_retries:
         try:
             with app.app_context():
-                # 先删除所有表
+                
                 try:
                     Vote.query.delete()
                     Option.query.delete()
@@ -410,9 +410,9 @@ def init_db():
                 except:
                     db.session.rollback()
                 
-                # 删除表结构
+                
                 db.drop_all()
-                # 创建表结构
+                
                 db.create_all()
                 print("Database tables created successfully!")
                 return True
@@ -421,7 +421,7 @@ def init_db():
             retry_count += 1
             if retry_count < max_retries:
                 print("Retrying...")
-                time.sleep(2)  # 等待2秒后重试
+                time.sleep(2)  
     
     print("Failed to initialize database after multiple attempts")
     return False
@@ -447,7 +447,7 @@ def vote():
         if not all([option_id, wallet_address, signature]):
             return jsonify({'error': 'Missing required parameters'}), 400
         
-        # 验证代币持有
+        
         if not check_token_balance(wallet_address):
             return jsonify({'error': 'You need to hold the required token to vote'}), 403
         

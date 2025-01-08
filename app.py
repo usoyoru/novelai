@@ -166,8 +166,8 @@ def generate_options(chapter_content):
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "你是一个创意故事写手。请为故事生成4个不同的发展选项。每个选项都应该简短但引人入胜，并提供独特的故事发展方向。"},
-                {"role": "user", "content": f"基于这个章节内容：{chapter_content}\n请生成4个不同的故事发展选项。每个选项都要标注序号(1-4)，并确保选项之间有明显的区别。"}
+                {"role": "system", "content": "You are a creative story writer. Please generate 4 different story development options. Each option should be concise but engaging, providing a unique direction for the story."},
+                {"role": "user", "content": f"Based on this chapter content: {chapter_content}\nPlease generate 4 different story development options. Number each option (1-4) and ensure clear distinctions between options."}
             ],
             max_tokens=800,
             temperature=0.8
@@ -176,7 +176,6 @@ def generate_options(chapter_content):
         content = response.choices[0].message.content
         options = []
         
-        
         lines = content.split('\n')
         current_option = ""
         
@@ -184,7 +183,6 @@ def generate_options(chapter_content):
             line = line.strip()
             if not line:
                 continue
-            
             
             if (line.startswith('1.') or line.startswith('2.') or 
                 line.startswith('3.') or line.startswith('4.') or
@@ -197,34 +195,31 @@ def generate_options(chapter_content):
             else:
                 if current_option:
                     current_option += " " + line
-
         
         if current_option:
             options.append(current_option.strip())
         
-       
         options = options[:4]
         while len(options) < 4:
-            options.append(f"继续探索故事的第{len(options) + 1}个方向")
+            options.append(f"Explore direction {len(options) + 1} of the story")
         
-       
         final_options = []
         for i, opt in enumerate(options, 1):
             if not opt or len(opt.strip()) < 5:
-                final_options.append(f"选项{i}：继续探索故事的新方向")
+                final_options.append(f"Option {i}: Explore a new direction in the story")
             else:
                 final_options.append(opt)
         
         return final_options
         
     except Exception as e:
-        print(f"生成选项时出错: {e}")
+        print(f"Error generating options: {e}")
         
         return [
-            "让主角踏上一段惊险的冒险",
-            "探索一个意想不到的转折",
-            "引入一个神秘的新角色",
-            "揭示一个重要的秘密"
+            "Lead the protagonist on an exciting adventure",
+            "Explore an unexpected twist",
+            "Introduce a mysterious new character",
+            "Reveal an important secret"
         ]
 
 def process_votes():
@@ -239,7 +234,6 @@ def process_votes():
             
             for story in stories:
                 try:
-                    
                     lock = ProcessLock(story_id=story.id)
                     db.session.add(lock)
                     db.session.commit()
@@ -252,10 +246,8 @@ def process_votes():
                     print(f"Processing story {story.id}")
                     options = Option.query.filter_by(story_id=story.id).all()
                     if options:
-                        
                         winning_option = max(options, key=lambda x: x.votes)
                         print(f"Winning option: {winning_option.description} with {winning_option.votes} votes")
-                        
                         
                         prompt = f"""Continue the story based on this choice: {winning_option.description}
 
@@ -275,16 +267,13 @@ Write the next chapter that follows this choice. Make it engaging and consistent
                                 next_update=current_time + timedelta(minutes=10)
                             )
                             db.session.add(new_story)
-                            db.session.flush() 
+                            db.session.flush()
                             
-                           
                             print("Deleting votes...")
                             Vote.query.filter_by(story_id=story.id).delete()
                             
-                            
                             print("Deleting old options...")
                             Option.query.filter_by(story_id=story.id).delete()
-                            
                             
                             print("Generating new options...")
                             new_options = generate_options(new_chapter)
@@ -299,7 +288,6 @@ Write the next chapter that follows this choice. Make it engaging and consistent
                     else:
                         print(f"No options found for story {story.id}")
                 finally:
-                    
                     try:
                         ProcessLock.query.filter_by(story_id=story.id).delete()
                         db.session.commit()

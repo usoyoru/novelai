@@ -26,7 +26,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # Constants
-TOKEN_ADDRESS = "ALC5uenSTeSECK2L9pY6nAEXXMBVZp85EcPVdDTBpump"
+TOKEN_ADDRESS = "XXXXXX"
 SOLANA_RPC_URL = "https://api.mainnet-beta.solana.com"
 
 

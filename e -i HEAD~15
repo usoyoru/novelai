@@ -1,0 +1,17 @@
+[33mb1d90c8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31mheroku/main[m[33m)[m 将投票时间改为10分钟，更新计时器显示
+[33m82c72f4[m Update voting time to 10 minutes and timer display
+[33m30866f9[m Add database-level locking to prevent duplicate story processing
+[33m61321d1[m Add process locking to prevent duplicate story processing
+[33md80843c[m Add error handling and retry mechanism for database initialization
+[33mc712937[m Modify story generation logic to create new story record for each
+[33m32b30cc[m Update interval to 30 seconds and optimize timer display
+[33m762b331[m Fix voting logic to delete vote records before options
+[33m6f6a301[m Increase length limit for wallet address and signature fields
+[33m049c004[m Fix timer refresh and vote processing logic
+[33m5769abf[m Fix signature handling and error processing in voting
+[33mefe069a[m Use solid colors for wallet icons and optimize connection UI
+[33m9ffa5a4[m Change option description field to Text type without length limit
+[33m444d001[m Add automatic database table creation
+[33mc51efc3[m Update database configuration for PostgreSQL
+[33m0f7968c[m Add runtime.txt to specify Python version
+[33mc42a85c[m Initial commit

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title">{{ story.title }}</h2>
+                <div class="story-content">
+                    {{ story.content | nl2br | safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Vote for the Next Chapter</h5>
+                <div id="wallet-warning" class="alert alert-warning mb-3">
+                    Please connect your Solana wallet to vote
+                </div>
+                <div class="alert alert-info mb-3">
+                    <small>Note: You need to hold tokens from contract <code>ALC5uenSTeSECK2L9pY6nAEXXMBVZp85EcPVdDTBpump</code> to vote</small>
+                </div>
+                <div id="timer" class="mb-3">
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" style="width: 100%"></div>
+                    </div>
+                    <small class="text-muted">Next update in: <span id="countdown">10:00</span></small>
+                </div>
+                
+                {% for option in options %}
+                <div class="card option-card mb-3" data-option-id="{{ option.id }}">
+                    <div class="card-body">
+                        <p class="card-text">{{ option.description }}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Votes: <span class="vote-count">{{ option.votes }}</span></small>
+                            <button class="btn btn-sm btn-outline-primary vote-btn" disabled>Vote</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Timer functionality
+    const nextUpdate = new Date("{{ story.next_update.isoformat() }}Z");
+    let reloadScheduled = false;
+    
+    function updateTimer() {
+        const now = new Date();
+        const timeLeft = nextUpdate - now;
+        
+        if (timeLeft <= 0) {
+            if (!reloadScheduled) {
+                reloadScheduled = true;
+                console.log("Scheduling page reload...");
+                setTimeout(() => {
+                    console.log("Reloading page...");
+                    location.reload();
+                }, 2000); // 等待2秒后刷新
+            }
+            return;
+        }
+        
+        const minutes = Math.floor(timeLeft / 60000);
+        const seconds = Math.floor((timeLeft % 60000) / 1000);
+        const progress = (timeLeft / (10 * 60 * 1000)) * 100;  // 10分钟计时
+        
+        $('#countdown').text(
+            String(minutes).padStart(2, '0') + ':' + 
+            String(seconds).padStart(2, '0')
+        );
+        $('.progress-bar').css('width', Math.max(0, progress) + '%');
+    }
+    
+    // 每秒更新一次计时器
+    const timerInterval = setInterval(updateTimer, 1000);
+    updateTimer();
+    
+    // Update voting buttons based on wallet connection
+    function updateVoteButtons() {
+        const warning = document.getElementById('wallet-warning');
+        const voteButtons = document.querySelectorAll('.vote-btn');
+        
+        if (window.walletAddress && window.walletAddress.length > 0) {
+            warning.style.display = 'none';
+            voteButtons.forEach(btn => {
+                if (!btn.classList.contains('btn-success')) {
+                    btn.disabled = false;
+                }
+            });
+        } else {
+            warning.style.display = 'block';
+            voteButtons.forEach(btn => btn.disabled = true);
+        }
+    }
+    
+    // Check wallet connection status periodically
+    setInterval(updateVoteButtons, 1000);
+    
+    // Listen for wallet connection
+    window.addEventListener('walletConnected', function(e) {
+        updateVoteButtons();
+    });
+    
+    // Initial check for wallet connection
+    updateVoteButtons();
+    
+    // Voting functionality
+    $('.vote-btn').on('click', async function() {
+        if (!window.walletAddress || window.walletAddress.length === 0) {
+            alert('Please connect your wallet first');
+            return;
+        }
+        
+        if (!currentProvider) {
+            alert('Wallet provider not found');
+            return;
+        }
+        
+        const btn = $(this);
+        const card = btn.closest('.option-card');
+        const optionId = card.data('option-id');
+        const voteCount = card.find('.vote-count');
+        
+        btn.prop('disabled', true);
+        
+        try {
+            // Sign message with wallet to verify ownership
+            const message = new TextEncoder().encode(`Vote for option: ${optionId}`);
+            const signedMessage = await currentProvider.signMessage(message);
+            
+            // Convert signature to base64 string
+            const signature = btoa(String.fromCharCode.apply(null, signedMessage.signature));
+            
+            $.ajax({
+                url: '/vote',
+                method: 'POST',
+                data: { 
+                    option_id: optionId,
+                    wallet_address: window.walletAddress,
+                    signature: signature
+                },
+                success: function() {
+                    voteCount.text(parseInt(voteCount.text()) + 1);
+                    btn.text('Voted!').removeClass('btn-outline-primary').addClass('btn-success');
+                },
+                error: function(xhr) {
+                    const errorMsg = xhr.responseJSON?.error || 'Unknown error';
+                    alert('Error submitting vote: ' + errorMsg);
+                    if (errorMsg !== 'You have already voted for this chapter') {
+                        btn.prop('disabled', false);
+                    }
+                }
+            });
+        } catch (err) {
+            console.error(err);
+            alert('Error signing vote: ' + err.message);
+            btn.prop('disabled', false);
+        }
+    });
+});
+</script>
+{% endblock %} 

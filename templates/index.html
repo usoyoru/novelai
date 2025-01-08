@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mb-5">
+    <h1 class="display-4 mb-3" style="color: #ff79c6;">AI INTERACTIVE NOVEL</h1>
+    <p class="lead" style="color: #a9b1d6;">Explore infinite story possibilities created by AI and shaped by readers</p>
+    <div class="d-flex justify-content-center gap-5 mt-4">
+        <div class="text-center">
+            <h2 style="color: #ff79c6; font-size: 2.5em;">{{ stories|length }}</h2>
+            <p style="color: #565f89;">Novels</p>
+        </div>
+        <div class="text-center">
+            <h2 style="color: #ff79c6; font-size: 2.5em;">{{ total_chapters }}</h2>
+            <p style="color: #565f89;">Chapters</p>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Token Information</h5>
+                <div class="token-info-item">
+                    <small class="text-muted">Contract Address:</small>
+                    <div class="d-flex align-items-center">
+                        <code class="me-2">{{ token_data.token_address }}</code>
+                        <button class="btn btn-sm btn-outline-secondary copy-btn" data-clipboard-text="{{ token_data.token_address }}">
+                            Copy
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12 d-flex justify-content-between align-items-center">
+        <h2 class="mb-0">Latest Works</h2>
+        <div class="btn-group">
+            <button class="btn btn-sm" style="background-color: #ff79c6; color: #1a1b26; font-weight: 600;">Latest</button>
+            <button class="btn btn-sm" style="background-color: #292e42; color: #a9b1d6;">Most Chapters</button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% if stories %}
+        {% for story in stories %}
+        <div class="col-md-6 mb-4">
+            <div class="card story-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ story.title }}</h5>
+                    <p class="card-text">Chapter {{ story.current_chapter }}</p>
+                    <a href="{{ url_for('view_story', story_id=story.id) }}" class="btn btn-outline-primary">Read Story</a>
+                </div>
+                <div class="card-footer text-muted">
+                    Created {{ story.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <h3 style="color: #565f89;">No Novels Yet</h3>
+            <p style="color: #a9b1d6;">New stories are being created, please check back later...</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <h3 style="color: #ff79c6;">About AI Interactive Novel</h3>
+        <p style="color: #a9b1d6;">This is an AI-powered interactive novel platform where readers' votes determine the story's development.</p>
+    </div>
+    <div class="col-md-4">
+        <h3 style="color: #ff79c6;">Follow Us</h3>
+        <a href="https://twitter.com" target="_blank" class="btn" style="background-color: #292e42; color: #a9b1d6;">
+            Twitter
+        </a>
+    </div>
+    <div class="col-md-4">
+        <h3 style="color: #ff79c6;">Update Frequency</h3>
+        <p style="color: #a9b1d6;">Vote results are checked every minute, new chapters are generated in real-time</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.8/clipboard.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize clipboard.js
+    new ClipboardJS('.copy-btn');
+    
+    // Add tooltip functionality for copy button
+    $('.copy-btn').on('click', function() {
+        const btn = $(this);
+        const originalText = btn.text();
+        btn.text('Copied!');
+        setTimeout(() => btn.text(originalText), 2000);
+    });
+});
+</script>
+{% endblock %} 

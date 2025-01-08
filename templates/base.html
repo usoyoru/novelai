@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interactive Novel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient-start: #0f0f1a;
+            --bg-gradient-end: #1a1b2e;
+            --card-bg: #1f2335;
+            --card-border: #2f3549;
+            --text-primary: #c0caf5;
+            --text-secondary: #a9b1d6;
+            --text-muted: #565f89;
+            --accent-color: #ff79c6;
+            --hover-bg: #292e42;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-secondary);
+            min-height: 100vh;
+        }
+        
+        .navbar {
+            background-color: rgba(15, 15, 26, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(47, 53, 73, 0.5);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-title {
+            color: var(--text-primary);
+        }
+
+        .card-body {
+            border-radius: 8px;
+        }
+
+        .card-footer {
+            background-color: rgba(15, 15, 26, 0.5);
+            border-top: 1px solid var(--card-border);
+            color: var(--text-muted);
+        }
+
+        .story-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(180deg, var(--card-bg) 0%, rgba(31, 35, 53, 0.95) 100%);
+        }
+        
+        .story-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .option-card {
+            cursor: pointer;
+            transition: all 0.2s;
+            background: linear-gradient(180deg, var(--card-bg) 0%, rgba(31, 35, 53, 0.95) 100%);
+        }
+        
+        .option-card:hover {
+            background-color: var(--hover-bg);
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .progress {
+            height: 5px;
+            background-color: rgba(15, 15, 26, 0.5);
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            background-color: var(--accent-color);
+        }
+        
+        .wallet-btn {
+            background-color: var(--accent-color);
+            color: var(--bg-gradient-start);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 150px;
+            font-weight: 600;
+        }
+        
+        .wallet-btn:hover {
+            background-color: #ff92d0;
+            color: var(--bg-gradient-start);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(255, 121, 198, 0.2);
+        }
+        
+        .wallet-btn:disabled {
+            background-color: #bd93f9;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .wallet-address {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-left: 10px;
+        }
+        
+        .wallet-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .wallet-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            width: 200px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .wallet-menu.show {
+            display: block;
+        }
+        
+        .wallet-option {
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .wallet-option::before {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        /* Phantom 钱包的纯色图标 */
+        .wallet-option.phantom::before {
+            background-color: #AB9FF2;
+        }
+        
+        /* OKX 钱包的纯色图标 */
+        .wallet-option.okx::before {
+            background-color: #2FB599;
+        }
+        
+        .wallet-option:hover {
+            background-color: var(--hover-bg);
+        }
+        
+        /* 移除原有的图片图标 */
+        .wallet-icon {
+            display: none;
+        }
+        
+        .token-info-item {
+            padding: 15px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, var(--card-bg) 0%, rgba(31, 35, 53, 0.95) 100%);
+            border: 1px solid var(--card-border);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .token-info-item small {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+        }
+        
+        .token-info-item code {
+            font-size: 0.85em;
+            word-break: break-all;
+            background-color: var(--hover-bg);
+            color: var(--text-secondary);
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .copy-btn {
+            padding: 2px 8px;
+            font-size: 0.8em;
+            background-color: var(--hover-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text-primary);
+            transition: all 0.2s;
+        }
+        
+        .copy-btn:hover {
+            background-color: rgba(41, 46, 66, 0.8);
+            color: var(--text-primary);
+            transform: translateY(-1px);
+        }
+        
+        .token-balance {
+            font-size: 0.9em;
+            color: var(--accent-color);
+            font-weight: 600;
+            background-color: var(--hover-bg);
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-outline-primary {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            background-color: transparent;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-primary:hover {
+            color: var(--bg-gradient-start);
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(255, 121, 198, 0.2);
+        }
+
+        .text-muted {
+            color: var(--text-muted) !important;
+        }
+
+        h2 {
+            color: var(--text-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            padding: 0 20px;
+        }
+
+        .navbar-brand {
+            color: var(--accent-color) !important;
+            font-weight: 600;
+            font-size: 1.4em;
+            text-shadow: 0 2px 4px rgba(255, 121, 198, 0.2);
+        }
+
+        .btn-success {
+            background-color: #50fa7b;
+            border-color: #50fa7b;
+            color: var(--bg-gradient-start);
+            transition: all 0.2s;
+        }
+
+        .btn-success:hover {
+            background-color: #69ff94;
+            border-color: #69ff94;
+            color: var(--bg-gradient-start);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(80, 250, 123, 0.2);
+        }
+
+        .alert-warning {
+            background-color: var(--hover-bg);
+            border-color: var(--card-border);
+            color: #f1fa8c;
+        }
+
+        .btn-group .btn {
+            transition: all 0.2s;
+        }
+
+        .btn-group .btn:hover {
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">AI Story Generator</a>
+            <div class="d-flex align-items-center">
+                <div class="wallet-dropdown me-2">
+                    <button class="wallet-btn" onclick="toggleWalletMenu()">Connect Wallet</button>
+                    <div class="wallet-menu" id="walletMenu">
+                        <div class="wallet-option phantom" onclick="connectWallet('phantom')">
+                            Phantom Wallet
+                        </div>
+                        <div class="wallet-option okx" onclick="connectWallet('okx')">
+                            OKX Wallet
+                        </div>
+                    </div>
+                </div>
+                <span class="token-balance" id="tokenBalance"></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        let currentProvider = null;
+        window.walletAddress = '';
+
+        function toggleWalletMenu() {
+            document.getElementById('walletMenu').classList.toggle('show');
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.wallet-btn')) {
+                const dropdowns = document.getElementsByClassName("wallet-menu");
+                for (const dropdown of dropdowns) {
+                    if (dropdown.classList.contains('show')) {
+                        dropdown.classList.remove('show');
+                    }
+                }
+            }
+        }
+
+        async function connectWallet(type) {
+            try {
+                let provider;
+                if (type === 'phantom') {
+                    provider = window?.phantom?.solana;
+                } else if (type === 'okx') {
+                    provider = window?.okxwallet;
+                }
+
+                if (!provider) {
+                    alert(`Please install ${type} wallet`);
+                    return;
+                }
+
+                currentProvider = provider;
+                const resp = await provider.connect();
+                window.walletAddress = resp.publicKey.toString();
+
+                // Update UI
+                document.querySelector('.wallet-btn').textContent = 
+                    window.walletAddress.slice(0, 4) + '...' + 
+                    window.walletAddress.slice(-4);
+                document.getElementById('walletMenu').classList.remove('show');
+
+                // Get token balance
+                const response = await fetch(`/wallet_balance/${window.walletAddress}`);
+                const data = await response.json();
+                const balance = data.balance;
+                
+                const balanceElement = document.getElementById('tokenBalance');
+                balanceElement.textContent = `Balance: ${balance} ALC`;
+                balanceElement.style.display = 'inline-block';
+
+                // Dispatch wallet connected event
+                window.dispatchEvent(new Event('walletConnected'));
+            } catch (err) {
+                console.error(err);
+                alert('Failed to connect wallet: ' + err.message);
+            }
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

@@ -65,14 +65,14 @@ $(document).ready(function() {
                 setTimeout(() => {
                     console.log("Reloading page...");
                     location.reload();
-                }, 2000); // 等待2秒后刷新
+                }, 2000); 
             }
             return;
         }
         
         const minutes = Math.floor(timeLeft / 60000);
         const seconds = Math.floor((timeLeft % 60000) / 1000);
-        const progress = (timeLeft / (10 * 60 * 1000)) * 100;  // 10分钟计时
+        const progress = (timeLeft / (10 * 60 * 1000)) * 100;  
         
         $('#countdown').text(
             String(minutes).padStart(2, '0') + ':' + 
